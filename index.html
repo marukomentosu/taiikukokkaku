@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Sprint Multi-Device Recorder</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils"></script>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; touch-action: manipulation; }
+        video { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
+        canvas { width: 100vw; height: 100vh; object-fit: contain; }
+        
+        .ui-panel {
+            position: absolute; bottom: 20px; left: 0; right: 0;
+            display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 100;
+            padding: 0 15px;
+        }
+        
+        .controls-inner {
+            background: rgba(0,0,0,0.75); padding: 15px; border-radius: 20px;
+            backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);
+            width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center;
+        }
+
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 10px; }
+        
+        button {
+            padding: 12px 10px; font-size: 14px; font-weight: bold; border: none;
+            border-radius: 12px; cursor: pointer; color: white; transition: 0.2s;
+            -webkit-appearance: none;
+        }
+        
+        #toggleBtn { background: #3498db; }
+        #cameraBtn { background: #9b59b6; }
+        #recBtn { background: #e74c3c; grid-column: span 2; font-size: 16px; padding: 15px; }
+        #recBtn.recording { background: #fff; color: #e74c3c; animation: blink 1s infinite; }
+
+        .status-row { width: 100%; display: flex; justify-content: space-between; align-items: center; }
+        .badge { font-size: 10px; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; color: #fff; }
+        .bg-on { background: #2ecc71; }
+        .bg-off { background: #e67e22; }
+
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <video id="input_video" playsinline></video>
+    <canvas id="output_canvas"></canvas>
+
+    <div class="ui-panel">
+        <div class="controls-inner">
+            <div class="status-row">
+                <div id="statusBadge" class="badge bg-on">BG: ON</div>
+                <div style="color: rgba(255,255,255,0.6); font-size: 10px;" id="timer">00:00</div>
+            </div>
+            
+            <div class="btn-grid">
+                <button id="toggleBtn">背景切替</button>
+                <button id="cameraBtn">カメラ切替</button>
+                <button id="recBtn">録画開始</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const videoElement = document.getElementById('input_video');
+        const canvasElement = document.getElementById('output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const recBtn = document.getElementById('recBtn');
+        const toggleBtn = document.getElementById('toggleBtn');
+        const cameraBtn = document.getElementById('cameraBtn');
+        const statusBadge = document.getElementById('statusBadge');
+
+        let mediaRecorder;
+        let recordedChunks = [];
+        let isRecording = false;
+        let showBackground = true;
+        let currentFacingMode = 'environment'; // 初期値は外カメラ
+
+        function onResults(results) {
+            canvasElement.width = videoElement.videoWidth;
+            canvasElement.height = videoElement.videoHeight;
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+            if (showBackground) {
+                canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+            } else {
+                canvasCtx.fillStyle = '#000';
+                canvasCtx.fillRect(0, 0, canvasElement.width, canvasElement.height);
+            }
+
+            if (results.poseLandmarks) {
+                drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, {color: '#00FF00', lineWidth: 4});
+                drawLandmarks(canvasCtx, results.poseLandmarks, {color: '#FF0000', radius: 3});
+            }
+            canvasCtx.restore();
+        }
+
+        const pose = new Pose({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}` });
+        pose.setOptions({ modelComplexity: 1, smoothLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+        pose.onResults(onResults);
+
+        let camera;
+        function startCamera(facingMode) {
+            if (camera) camera.stop();
+            camera = new Camera(videoElement, {
+                onFrame: async () => { await pose.send({image: videoElement}); },
+                width: 1280, height: 720,
+                facingMode: facingMode
+            });
+            camera.start().catch(err => alert("カメラの起動に失敗しました: " + err));
+        }
+
+        // 初回起動
+        startCamera(currentFacingMode);
+
+        // カメラ切り替え
+        cameraBtn.onclick = () => {
+            currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
+            startCamera(currentFacingMode);
+        };
+
+        // 背景切り替え
+        toggleBtn.onclick = () => {
+            showBackground = !showBackground;
+            statusBadge.innerText = showBackground ? "BG: ON" : "BG: OFF";
+            statusBadge.className = showBackground ? "badge bg-on" : "badge bg-off";
+        };
+
+        // 録画ロジック
+        recBtn.onclick = () => {
+            if (!isRecording) startRecording();
+            else stopRecording();
+        };
+
+        function startRecording() {
+            recordedChunks = [];
+            const stream = canvasElement.captureStream(25);
+            
+            // iOS/Safari対応のため、複数のMIMEタイプを試行
+            const types = ['video/webm;codecs=vp9', 'video/webm', 'video/mp4'];
+            let selectedType = types.find(t => MediaRecorder.isTypeSupported(t));
+            
+            mediaRecorder = new MediaRecorder(stream, { mimeType: selectedType });
+            mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: selectedType || 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `sprint_ai_${new Date().getTime()}.webm`;
+                a.click();
+            };
+            
+            mediaRecorder.start();
+            isRecording = true;
+            recBtn.innerText = "停止して保存";
+            recBtn.classList.add('recording');
+        }
+
+        function stopRecording() {
+            mediaRecorder.stop();
+            isRecording = false;
+            recBtn.innerText = "録画開始";
+            recBtn.classList.remove('recording');
+        }
+    </script>
+</body>
+</html>
