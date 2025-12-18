@@ -14,32 +14,36 @@
         canvas { width: 100%; height: 100%; object-fit: contain; }
         
         .ui-panel { position: absolute; bottom: var(--safe-bottom); left: 0; right: 0; display: flex; flex-direction: column; align-items: center; z-index: 100; padding: 0 10px 10px; }
-        .controls-inner { background: rgba(0,0,0,0.85); padding: 12px; border-radius: 20px; backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.2); width: 92%; max-width: 400px; }
+        .controls-inner { background: rgba(0,0,0,0.9); padding: 15px; border-radius: 24px; backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.2); width: 92%; max-width: 420px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         
-        .mode-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
-        .mode-settings button { font-size: 12px; padding: 8px; border-radius: 10px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; }
-        .mode-settings button.active { background: #e67e22; color: white; border-color: #e67e22; }
+        /* 設定セクション */
+        .settings-group { margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+        .label-row { display: flex; justify-content: space-between; color: white; font-size: 11px; margin-bottom: 5px; opacity: 0.8; }
 
-        .trace-settings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 10px; }
-        .trace-settings button { font-size: 11px; padding: 6px 2px; border-radius: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; }
-        .trace-settings button.active { background: #f1c40f; color: #000; border-color: #f1c40f; }
+        .mode-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .mode-settings button { font-size: 12px; padding: 10px; border-radius: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; font-weight: bold; }
+        .mode-settings button.active { background: #e67e22; border-color: #ff9f43; }
+
+        .trace-settings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+        .trace-settings button { font-size: 10px; padding: 8px 2px; border-radius: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); color: white; }
+        .trace-settings button.active { background: #f1c40f; color: #000; font-weight: bold; }
+
+        /* スライダー */
+        input[type=range] { width: 100%; height: 6px; border-radius: 3px; accent-color: #e67e22; }
 
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
-        button { font-weight: bold; border: none; cursor: pointer; color: white; -webkit-appearance: none; transition: 0.2s; }
-        #toggleBtn { background: #3498db; border-radius: 12px; height: 44px; }
-        #cameraBtn { background: #9b59b6; border-radius: 12px; height: 44px; }
-        #recBtn { background: #e74c3c; grid-column: span 2; font-size: 16px; padding: 15px; border-radius: 16px; margin-top: 5px; }
+        button { cursor: pointer; transition: 0.2s; -webkit-appearance: none; border: none; }
+        #toggleBtn { background: #3498db; color: white; border-radius: 12px; height: 44px; font-weight: bold; }
+        #cameraBtn { background: #9b59b6; color: white; border-radius: 12px; height: 44px; font-weight: bold; }
+        #recBtn { background: #e74c3c; color: white; grid-column: span 2; font-size: 18px; padding: 16px; border-radius: 18px; margin-top: 5px; font-weight: bold; }
         #recBtn.recording { background: #fff; color: #e74c3c; animation: blink 1s infinite; }
 
+        /* プレビュー */
         #previewContainer { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 200; flex-direction: column; }
         #previewVideo { width: 100%; height: 60%; object-fit: contain; margin-top: auto; }
         .preview-ui { height: 35%; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; padding-bottom: var(--safe-bottom); margin-bottom: auto; }
-
-        .slider-box { width: 85%; max-width: 320px; display: flex; flex-direction: column; align-items: center; gap: 8px; background: rgba(255,255,255,0.1); padding: 12px; border-radius: 15px; }
-        .slider-label { color: white; font-size: 14px; width: 100%; display: flex; justify-content: space-between; }
-
         .preview-btns { display: flex; gap: 10px; width: 90%; max-width: 400px; }
-        .preview-btns button { flex: 1; padding: 14px; border-radius: 12px; }
+        .preview-btns button { flex: 1; padding: 16px; border-radius: 14px; color: white; font-weight: bold; font-size: 16px; }
         #savePreview { background: #2ecc71; }
         #closePreview { background: #555; }
 
@@ -56,24 +60,34 @@
 
     <div class="ui-panel">
         <div class="controls-inner">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <div id="statusBadge" class="badge bg-on">BG: ON</div>
-                <button onclick="allClear()" style="background:none; border:1px solid #777; font-size:9px; padding:2px 6px; color:white;">全リセット</button>
+                <button onclick="allClear()" style="background:none; border:1px solid #777; font-size:10px; padding:4px 8px; color:white; border-radius:5px;">画面クリア</button>
             </div>
 
-            <div class="mode-settings">
-                <button id="mode_strobe" onclick="toggleStrobe()">残像モード: OFF</button>
-                <button id="mode_trace" class="active" onclick="toggleTraceMaster()">軌跡表示: ON</button>
+            <div class="settings-group">
+                <div class="mode-settings">
+                    <button id="mode_strobe" onclick="toggleStrobe()">残像: OFF</button>
+                    <button id="mode_trace" class="active" onclick="toggleTraceMaster()">軌跡: ON</button>
+                </div>
+                <div class="label-row">
+                    <span>残像の間隔 (少ないほど濃い)</span>
+                    <span id="strobeIntervalVal">6 frames</span>
+                </div>
+                <input type="range" id="strobeSlider" min="3" max="30" step="1" value="6">
             </div>
 
-            <div class="trace-settings">
-                <button id="trace_head" class="active" onclick="toggleTrace('head')">頭・体幹</button>
-                <button id="trace_arms" class="active" onclick="toggleTrace('arms')">腕</button>
-                <button id="trace_legs" class="active" onclick="toggleTrace('legs')">足</button>
+            <div class="settings-group">
+                <div class="label-row"><span>軌跡を表示する部位</span></div>
+                <div class="trace-settings">
+                    <button id="trace_head" class="active" onclick="toggleTrace('head')">頭・体幹</button>
+                    <button id="trace_arms" class="active" onclick="toggleTrace('arms')">腕 (左右)</button>
+                    <button id="trace_legs" class="active" onclick="toggleTrace('legs')">足 (左右)</button>
+                </div>
             </div>
 
             <div class="btn-grid">
-                <button id="toggleBtn">背景切替</button>
+                <button id="toggleBtn">背景 ON/OFF</button>
                 <button id="cameraBtn">カメラ切替</button>
                 <button id="recBtn">録画開始</button>
             </div>
@@ -83,10 +97,8 @@
     <div id="previewContainer">
         <video id="previewVideo" playsinline loop controls autoplay></video>
         <div class="preview-ui">
-            <div class="slider-box">
-                <div class="slider-label"><span>再生速度</span><span id="speedValue">0.5x</span></div>
-                <input type="range" id="speedSlider" min="0.1" max="2.0" step="0.1" value="0.5">
-            </div>
+            <div style="width:85%; color:white; font-size:12px; margin-bottom:5px;">スロー再生調整</div>
+            <input type="range" id="speedSlider" min="0.1" max="1.5" step="0.1" value="0.5" style="width:85%; margin-bottom:20px;">
             <div class="preview-btns">
                 <button id="closePreview">再撮影</button>
                 <button id="savePreview">保存する</button>
@@ -101,11 +113,12 @@
         const recBtn = document.getElementById('recBtn');
         const toggleBtn = document.getElementById('toggleBtn');
         const cameraBtn = document.getElementById('cameraBtn');
+        const strobeSlider = document.getElementById('strobeSlider');
+        const strobeIntervalVal = document.getElementById('strobeIntervalVal');
         const statusBadge = document.getElementById('statusBadge');
         const previewContainer = document.getElementById('previewContainer');
         const previewVideo = document.getElementById('previewVideo');
         const speedSlider = document.getElementById('speedSlider');
-        const speedValueDisplay = document.getElementById('speedValue');
 
         let mediaRecorder;
         let recordedChunks = [];
@@ -114,20 +127,26 @@
         let currentFacingMode = 'environment';
         let lastBlobUrl = null;
 
-        // 設定とデータ
+        // ロジック用変数
         let strobeActive = false;
         let traceMaster = true;
+        let strobeInterval = 6;
         let traceConfig = { head: true, arms: true, legs: true };
         let traces = { head: [], l_hand: [], r_hand: [], l_foot: [], r_foot: [] };
-        let strobeHistory = []; // 過去の全スケルトン座標を保持
+        let strobeHistory = [];
         let frameCount = 0;
-        const STROBE_INTERVAL = 6; // 何フレームごとに残像を残すか
-        const MAX_TRACE_POINTS = 60;
+        const MAX_TRACE_POINTS = 100;
+
+        // スライダー連動
+        strobeSlider.oninput = () => {
+            strobeInterval = parseInt(strobeSlider.value);
+            strobeIntervalVal.innerText = `${strobeInterval} frames`;
+        };
 
         function toggleStrobe() {
             strobeActive = !strobeActive;
             const btn = document.getElementById('mode_strobe');
-            btn.innerText = `残像モード: ${strobeActive ? 'ON' : 'OFF'}`;
+            btn.innerText = `残像: ${strobeActive ? 'ON' : 'OFF'}`;
             btn.classList.toggle('active', strobeActive);
             if (!strobeActive) strobeHistory = [];
         }
@@ -135,7 +154,7 @@
         function toggleTraceMaster() {
             traceMaster = !traceMaster;
             const btn = document.getElementById('mode_trace');
-            btn.innerText = `軌跡表示: ${traceMaster ? 'ON' : 'OFF'}`;
+            btn.innerText = `軌跡: ${traceMaster ? 'ON' : 'OFF'}`;
             btn.classList.toggle('active', traceMaster);
         }
 
@@ -152,7 +171,7 @@
         function drawTraceLine(ctx, points, color) {
             if (points.length < 2) return;
             ctx.beginPath();
-            ctx.lineWidth = 3; ctx.strokeStyle = color; ctx.lineJoin = 'round';
+            ctx.lineWidth = 4; ctx.strokeStyle = color; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
             ctx.moveTo(points[0].x * canvasElement.width, points[0].y * canvasElement.height);
             for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x * canvasElement.width, points[i].y * canvasElement.height);
             ctx.stroke();
@@ -177,7 +196,7 @@
                 const lm = results.poseLandmarks;
                 frameCount++;
 
-                // 軌跡更新
+                // 軌跡の計算
                 if (traceMaster) {
                     const update = (k, p) => { 
                         traces[k].push({x: p.x, y: p.y}); 
@@ -191,27 +210,27 @@
                     if (traceConfig.legs) { drawTraceLine(canvasCtx, traces.l_foot, '#2ecc71'); drawTraceLine(canvasCtx, traces.r_foot, '#27ae60'); }
                 }
 
-                // 残像（ストロボ）処理
-                if (strobeActive && frameCount % STROBE_INTERVAL === 0) {
+                // ストロボ保存
+                if (strobeActive && frameCount % strobeInterval === 0) {
                     strobeHistory.push(JSON.parse(JSON.stringify(lm)));
                 }
 
-                // 過去の残像を描画
-                strobeHistory.forEach((oldLm, index) => {
-                    const alpha = 0.3; // 残像の透明度
-                    canvasCtx.globalAlpha = alpha;
-                    drawConnectors(canvasCtx, oldLm, POSE_CONNECTIONS, {color: '#AAA', lineWidth: 1});
+                // ストロボ描画 (濃度を0.6にアップ)
+                strobeHistory.forEach((oldLm) => {
+                    canvasCtx.globalAlpha = 0.6;
+                    drawConnectors(canvasCtx, oldLm, POSE_CONNECTIONS, {color: '#CCCCCC', lineWidth: 1});
+                    drawLandmarks(canvasCtx, oldLm, {color: '#FFFFFF', radius: 1});
                 });
                 canvasCtx.globalAlpha = 1.0;
 
-                // 現在のスケルトン
-                drawConnectors(canvasCtx, lm, POSE_CONNECTIONS, {color: '#FFFFFF', lineWidth: 2});
-                drawLandmarks(canvasCtx, lm, {color: '#FF0000', radius: 2});
+                // 最新のスケルトン
+                drawConnectors(canvasCtx, lm, POSE_CONNECTIONS, {color: '#FFFFFF', lineWidth: 3});
+                drawLandmarks(canvasCtx, lm, {color: '#FF0000', radius: 3});
             }
             canvasCtx.restore();
         }
 
-        // --- 以下、既存のカメラ・録画・プレビュー機能 ---
+        // 基本設定
         const pose = new Pose({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}` });
         pose.setOptions({ modelComplexity: 1, smoothLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
         pose.onResults(onResults);
@@ -227,18 +246,14 @@
         }
         startCamera(currentFacingMode);
 
+        // ボタンイベント
         cameraBtn.onclick = () => { currentFacingMode = (currentFacingMode === 'user' ? 'environment' : 'user'); startCamera(currentFacingMode); };
         toggleBtn.onclick = () => {
             showBackground = !showBackground;
             statusBadge.innerText = showBackground ? "BG: ON" : "BG: OFF";
             statusBadge.className = showBackground ? "badge bg-on" : "badge bg-off";
         };
-
-        speedSlider.oninput = () => {
-            const val = speedSlider.value;
-            previewVideo.playbackRate = val;
-            speedValueDisplay.innerText = val + "x";
-        };
+        speedSlider.oninput = () => { previewVideo.playbackRate = speedSlider.value; };
 
         recBtn.onclick = () => {
             if (!isRecording) { allClear(); startRecording(); }
@@ -253,6 +268,7 @@
             mediaRecorder.ondataavailable = (e) => recordedChunks.push(e.data);
             mediaRecorder.onstop = () => {
                 const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType });
+                if (lastBlobUrl) URL.revokeObjectURL(lastBlobUrl);
                 lastBlobUrl = URL.createObjectURL(blob);
                 previewVideo.src = lastBlobUrl;
                 previewContainer.style.display = 'flex';
