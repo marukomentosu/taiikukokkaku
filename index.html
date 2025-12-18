@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Sprint Preview Optimized</title>
+    <title>AI Sprint iOS Fix</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils"></script>
@@ -12,26 +12,21 @@
         video#input_video { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
         canvas { width: 100vw; height: 100vh; object-fit: contain; }
         
-        /* 操作パネル */
         .ui-panel { position: absolute; bottom: 20px; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 100; padding: 0 15px; }
-        .controls-inner { background: rgba(0,0,0,0.75); padding: 15px; border-radius: 20px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center; }
+        .controls-inner { background: rgba(0,0,0,0.8); padding: 15px; border-radius: 20px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center; }
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 10px; }
         
-        button { padding: 12px 10px; font-size: 14px; font-weight: bold; border: none; border-radius: 12px; cursor: pointer; color: white; transition: 0.2s; -webkit-appearance: none; }
+        button { padding: 14px 10px; font-size: 14px; font-weight: bold; border: none; border-radius: 12px; cursor: pointer; color: white; transition: 0.2s; -webkit-appearance: none; }
         #toggleBtn { background: #3498db; }
         #cameraBtn { background: #9b59b6; }
-        #recBtn { background: #e74c3c; grid-column: span 2; font-size: 16px; padding: 15px; }
+        #recBtn { background: #e74c3c; grid-column: span 2; font-size: 16px; }
         #recBtn.recording { background: #fff; color: #e74c3c; animation: blink 1s infinite; }
 
-        /* プレビュー画面 */
-        #previewContainer {
-            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: #000; z-index: 200; flex-direction: column; align-items: center; justify-content: center;
-        }
-        #previewVideo { width: 100%; height: 80%; object-fit: contain; }
+        #previewContainer { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 200; flex-direction: column; align-items: center; justify-content: center; }
+        #previewVideo { width: 100%; height: 75%; object-fit: contain; }
         .preview-ui { position: absolute; bottom: 40px; display: flex; gap: 20px; }
-        #closePreview { background: #e67e22; padding: 15px 30px; }
-        #savePreview { background: #2ecc71; padding: 15px 30px; }
+        #closePreview { background: #e67e22; padding: 15px 25px; }
+        #savePreview { background: #2ecc71; padding: 15px 25px; }
 
         .badge { font-size: 10px; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; color: #fff; }
         .bg-on { background: #2ecc71; }
@@ -41,7 +36,7 @@
 </head>
 <body>
 
-    <video id="input_video" playsinline></video>
+    <video id="input_video" playsinline muted></video>
     <canvas id="output_canvas"></canvas>
 
     <div class="ui-panel">
@@ -56,12 +51,11 @@
     </div>
 
     <div id="previewContainer">
-        <video id="previewVideo" playsinline loop controls></video>
+        <video id="previewVideo" playsinline loop controls autoplay></video>
         <div class="preview-ui">
-            <button id="closePreview">閉じて再撮影</button>
-            <button id="savePreview">保存する</button>
+            <button id="closePreview">再撮影</button>
+            <button id="savePreview">保存</button>
         </div>
-        <div style="color: white; position: absolute; top: 20px;">録画プレビュー (自動ループ再生)</div>
     </div>
 
     <script>
@@ -72,7 +66,6 @@
         const toggleBtn = document.getElementById('toggleBtn');
         const cameraBtn = document.getElementById('cameraBtn');
         const statusBadge = document.getElementById('statusBadge');
-        
         const previewContainer = document.getElementById('previewContainer');
         const previewVideo = document.getElementById('previewVideo');
         const closePreview = document.getElementById('closePreview');
@@ -86,8 +79,10 @@
         let lastBlobUrl = null;
 
         function onResults(results) {
-            canvasElement.width = videoElement.videoWidth;
-            canvasElement.height = videoElement.videoHeight;
+            if (canvasElement.width !== videoElement.videoWidth) {
+                canvasElement.width = videoElement.videoWidth;
+                canvasElement.height = videoElement.videoHeight;
+            }
             canvasCtx.save();
             canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
             if (showBackground) {
@@ -130,45 +125,77 @@
             statusBadge.className = showBackground ? "badge bg-on" : "badge bg-off";
         };
 
-        // --- 録画とプレビューの連動ロジック ---
+        // --- iOS 向け修正版録画ロジック ---
         recBtn.onclick = () => {
-            if (!isRecording) startRecording();
-            else stopRecording();
+            if (!isRecording) {
+                startRecording();
+            } else {
+                stopRecording();
+            }
         };
+
+        function getSupportedMimeType() {
+            // iPhone/iPad (iOS) は現在 video/mp4 を推奨
+            const types = [
+                'video/mp4;codecs=avc1', // iOS 14+ 
+                'video/mp4',
+                'video/webm;codecs=vp9',
+                'video/webm'
+            ];
+            for (let type of types) {
+                if (MediaRecorder.isTypeSupported(type)) return type;
+            }
+            return '';
+        }
 
         function startRecording() {
             recordedChunks = [];
+            
+            // 重要: captureStream の引数（fps）を明示
             const stream = canvasElement.captureStream(30);
-            const mimeType = MediaRecorder.isTypeSupported('video/mp4;codecs=h264') ? 'video/mp4;codecs=h264' : 'video/webm';
+            const mimeType = getSupportedMimeType();
             
-            mediaRecorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 2500000 });
-            mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
-            
-            mediaRecorder.onstop = () => {
-                const blob = new Blob(recordedChunks, { type: mimeType });
-                if (lastBlobUrl) URL.revokeObjectURL(lastBlobUrl);
-                lastBlobUrl = URL.createObjectURL(blob);
+            try {
+                const options = mimeType ? { mimeType } : {};
+                mediaRecorder = new MediaRecorder(stream, options);
                 
-                // プレビュー表示
-                previewVideo.src = lastBlobUrl;
-                previewContainer.style.display = 'flex';
-                previewVideo.play();
-            };
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data && e.data.size > 0) {
+                        recordedChunks.push(e.data);
+                    }
+                };
+                
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/mp4' });
+                    if (lastBlobUrl) URL.revokeObjectURL(lastBlobUrl);
+                    lastBlobUrl = URL.createObjectURL(blob);
+                    
+                    previewVideo.src = lastBlobUrl;
+                    previewContainer.style.display = 'flex';
+                    // iOSの自動再生制約を回避するため再生を試みる
+                    previewVideo.play().catch(e => console.log("Auto-play blocked"));
+                };
 
-            mediaRecorder.start(100);
-            isRecording = true;
-            recBtn.innerText = "停止してプレビュー";
-            recBtn.classList.add('recording');
+                mediaRecorder.start(500); // データを細かく区切って蓄積
+                isRecording = true;
+                recBtn.innerText = "録画を停止";
+                recBtn.classList.add('recording');
+                console.log("Recording started with type:", mimeType);
+            } catch (err) {
+                alert("録画の開始に失敗しました: " + err);
+                console.error(err);
+            }
         }
 
         function stopRecording() {
-            mediaRecorder.stop();
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                mediaRecorder.stop();
+            }
             isRecording = false;
             recBtn.innerText = "録画開始";
             recBtn.classList.remove('recording');
         }
 
-        // プレビュー画面の操作
         closePreview.onclick = () => {
             previewVideo.pause();
             previewContainer.style.display = 'none';
@@ -177,8 +204,10 @@
         savePreview.onclick = () => {
             const a = document.createElement('a');
             a.href = lastBlobUrl;
-            a.download = `sprint_ai_${new Date().getTime()}.mp4`;
+            a.download = `sprint_${Date.now()}.mp4`;
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
         };
     </script>
 </body>
